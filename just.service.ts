@@ -63,15 +63,27 @@ export class JustService {
     }
 
     const right = "بتثنيئ" + "جحخ" + "سش" + "صض" + "طظ" + "عغ" + "فق" + "كلم" + "ه"
-    const left = "دا" + "ئبتثني" + "جحخ" + "طظ" + "عغ" + "فق" + "ةكم"
+    const leftAsendant = "دا"
+    const left = "ئبتثني" + "جحخ" + "طظ" + "عغ" + "فق" + "ةكم"
 
     const behnoonfina = "^.*[بتثني]\\p{Mn}*ن\\p{Mn}*$"
-
+    /*
     const kashidaLookup2: Lookup = {
-      regExpr: new RegExp(`${behnoonfina}|${behafterbeh}|^.*(?<k3>[${right}])\\p{Mn}*(?<k4>[${left}]).*$`, "gdu"),
+      regExpr: new RegExp(`${behnoonfina}|${behafterbeh}|^.*(?<k5>[${right}])\\p{Mn}*(?<k6>[${leftAsendant}]).*$|^.*(?<k3>[${right}])\\p{Mn}*(?<k4>[${left}]).*$`, "gdu"),
       actions: {
         k3: [{ name: 'cv01', calcNewValue: (prev, curr) => (prev || 0) + curr }],
-        k4: [{ name: 'cv02', calcNewValue: (prev, curr) => (prev || 0) + curr * 2 }]
+        k4: [{ name: 'cv02', calcNewValue: (prev, curr) => (prev || 0) + curr * 2 }],
+        k5: [{ name: 'cv01', calcNewValue: (prev, curr) => (prev || 0) + curr }],
+        k6: [{ name: 'cv02', calcNewValue: (prev, curr) => (prev || 0) + curr }]
+      }
+    }*/
+
+    const kashidaLookup2: Lookup = {
+      regExpr: new RegExp(`${behnoonfina}|${behafterbeh}|^.*(?<k3>[${right}])\\p{Mn}*((?<k4>[${left}]).*$|(?<k5>[${leftAsendant}]).*$)`, "gdu"),
+      actions: {
+        k3: [{ name: 'cv01', calcNewValue: (prev, curr) => (prev || 0) + curr }],
+        k4: [{ name: 'cv02', calcNewValue: (prev, curr) => (prev || 0) + curr * 2 }],        
+        k5: [{ name: 'cv02', calcNewValue: (prev, curr) => (prev || 0) + curr }]
       }
     }
 
