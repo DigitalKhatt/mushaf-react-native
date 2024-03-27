@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Paragraph, Skia, useFonts, TextAlign, Canvas, Circle, Group, useFont, Text, TextBlob, Rect, center } from "@shopify/react-native-skia";
 import { StyleSheet, View, Button, Alert, TextInput } from 'react-native';
 import Page from "./page";
+import PagePC from "./pagepc";
+import PageFactory from "./pagefactory";
 
 
 
@@ -15,7 +17,20 @@ const Mushaf = () => {
 
   const [pageWidth, setPageWidth] = useState(defaultPageWidth);
   const [pageIndex, setPageIndex] = useState(2);
+  const [layoutType, setLayoutType] = useState(1);
+  const [layouText, setLayouText] = useState('Switch to pre-calculated Layout');
+
   
+
+  const switchLayoutType = () => {
+    if (layoutType == 1) {
+      setLayoutType(2)
+      setLayouText('Switch to Runtime Layout')
+    } else {
+      setLayoutType(1)
+      setLayouText('Switch to Pre-calculated Layout')      
+    }    
+  };
 
   return (
     <View style={styles.container}>
@@ -47,8 +62,11 @@ const Mushaf = () => {
           title="+"
           onPress={() => setPageWidth(pageWidth * 1.2)}
         />
+        <button onClick={switchLayoutType} style={styles.layoutButton}>
+          {layouText}
+        </button>
       </View>
-      <Page pageWidth={pageWidth} index={pageIndex}/>      
+      <PageFactory pageWidth={pageWidth} index={pageIndex} type={layoutType } />      
     </View>
   );
   
@@ -76,6 +94,15 @@ const styles = StyleSheet.create({
     textAlign:"center",
     color: "#ffffffff"
   },
+  layoutButton: {
+    width: 200,
+    height: 35,
+    padding: 5,
+    borderWidth: 1,
+    backgroundColor: "rgb(33, 150, 243)",
+    textAlign: "center",
+    color: "#ffffffff"
+  }
 });
 
 

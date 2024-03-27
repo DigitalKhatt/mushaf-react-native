@@ -5,7 +5,8 @@ import {
   SkTextFontFeatures,
   SkParagraphStyle,
   TextDirection,
-  SkTextStyle
+  SkTextStyle,
+  SkRect
 } from "@shopify/react-native-skia";
 import { quranTextService, PAGE_WIDTH, FONTSIZE, MARGIN, INTERLINE, TOP, SPACEWIDTH, SpaceType, LineTextInfo } from './qurantext.service'
 import { JustInfo, JustService } from './just.service'
@@ -14,8 +15,13 @@ type LineProps = {
   pageWidth: number;
   pageIndex: number;
   lineIndex: number;
+  yPos: number;
 };
 
+const lineParStyle = {
+  textHeightBehavior: TextHeightBehavior.DisableAll,
+  textDirection: TextDirection.RTL
+};
 
 const Line = (props: LineProps) => {
 
@@ -63,12 +69,6 @@ const Line = (props: LineProps) => {
 
   const lineTextInfo = quranTextService.analyzeText(pageIndex, lineIndex)
 
-  const lineParStyle: SkParagraphStyle = {
-    textAlign: TextAlign.Left,
-    textHeightBehavior: TextHeightBehavior.DisableAll
-  };
-
-
   if (lineInfo.lineType === 1) {
     //sura name : center
 
@@ -83,12 +83,11 @@ const Line = (props: LineProps) => {
     paragraph.layout(maxWidth);
     const parHeight = paragraph.getHeight();
     const parWidth = paragraph.getLongestLine();
+
+    const xPos = -(maxWidth - parWidth) + (pageWidth - parWidth) / 2;
+
     return (
-      <View style={{ width: parWidth, height: interLine, position: 'relative', left: (pageWidth - parWidth) / 2 }}>
-        <Canvas style={{ width: pageWidth, height: interLine, position: 'relative', top: -250 * scale }}>
-          <Paragraph style="fill" paragraph={paragraph} x={0} y={0} width={maxWidth} />
-        </Canvas>
-      </View>
+      <Paragraph style="fill" paragraph={paragraph} x={xPos} y={props.yPos} width={maxWidth} />
     );
 
   } else if (lineInfo.lineType === 2 && pageIndex != 0 && pageIndex != 1) {
@@ -107,13 +106,12 @@ const Line = (props: LineProps) => {
     paragraph.layout(maxWidth);
     const parHeight = paragraph.getHeight();
     const parWidth = paragraph.getLongestLine();
-    return (
-      <View style={{ width: parWidth, height: interLine, position: 'relative', left: (pageWidth - parWidth) / 2 }}>
-        <Canvas style={{ width: pageWidth, height: interLine, position: 'relative', top: -250 * scale }}>
-          <Paragraph paragraph={paragraph} x={0} y={0} width={maxWidth} />
-        </Canvas>
-      </View>
+   
 
+    const xPos = -(maxWidth - parWidth) + (pageWidth - parWidth) / 2;
+
+    return (
+      <Paragraph style="fill" paragraph={paragraph} x={xPos} y={props.yPos} width={maxWidth} />
     );
   } else {
     // simple line
@@ -125,11 +123,7 @@ const Line = (props: LineProps) => {
       lineWidth = newlineWidth
     }
 
-    let marginTop = 0
-
-    if ((pageIndex === 0 || pageIndex == 1) && lineIndex == 1) {
-      marginTop = 2 * interLine;
-    }
+    
 
     const lineTextStyle = {
       color: Skia.Color("black"),
@@ -138,15 +132,18 @@ const Line = (props: LineProps) => {
     };
 
     let layOutResult = []
+    let wordWidths: any[] = []
+    let spaceWidths: any[] = []
 
     let justResults: JustInfo | undefined
+
 
     let simpleSpaceWidth;
     let ayaSpaceWidth;
 
     const totalSpaces = lineTextInfo.ayaSpaceIndexes.length + lineTextInfo.simpleSpaceIndexes.length;
 
-    let currentLineWidth = defaultSpaceWidth * totalSpaces
+    let textWidthByWord = defaultSpaceWidth * totalSpaces
 
     for (let wordIndex = 0; wordIndex < lineTextInfo.wordInfos.length; wordIndex++) {
       const wordInfo = lineTextInfo.wordInfos[wordIndex]
@@ -158,7 +155,7 @@ const Line = (props: LineProps) => {
       const parHeight = paragraph.getHeight();
       const parWidth = paragraph.getLongestLine();
 
-      currentLineWidth += parWidth
+      textWidthByWord += parWidth
 
       layOutResult.push({
         paragraph,
@@ -167,6 +164,37 @@ const Line = (props: LineProps) => {
       })
 
     }
+
+    let getTextWidth = function () {
+      const lineParStyle2: SkParagraphStyle = {
+        textHeightBehavior: TextHeightBehavior.DisableAll,
+        textDirection: TextDirection.RTL
+      };
+      let paragraphBuilder = Skia.ParagraphBuilder.Make(lineParStyle2, fontMgr).pushStyle(lineTextStyle);
+      paragraphBuilder.addText(lineText)
+      let paragraph = paragraphBuilder.pop().build();
+      paragraph.layout(maxWidth);
+      const parHeight = paragraph.getHeight();
+      const parWidth = paragraph.getLongestLine();
+      /*
+      let prevRect: SkRect | undefined;
+      for (let wordIndex = 0; wordIndex < lineTextInfo.wordInfos.length; wordIndex++) {
+        const wordInfo = lineTextInfo.wordInfos[wordIndex]
+        //const endIndex = wordIndex === (lineTextInfo.wordInfos.length - 1) ? lineText.length : lineTextInfo.wordInfos[wordIndex + 1].startIndex - 1
+        const endIndex = wordInfo.endIndex + 1
+        const rect = paragraph.getRectsForRange(wordInfo.startIndex, endIndex)
+        const currRect = rect[0]
+        wordWidths.push(currRect);
+        if (prevRect) {
+          const spaceWidth = prevRect.x - currRect.width
+          spaceWidths.push(spaceWidth)
+        }
+        prevRect = rect[0];
+      }*/
+      return parWidth
+    }
+
+    let currentLineWidth = getTextWidth()
 
     let diff = lineWidth - currentLineWidth
 
@@ -189,7 +217,7 @@ const Line = (props: LineProps) => {
       currentLineWidth += stretch
 
       // stretching
-
+      
       if (lineWidth > currentLineWidth) {
         const lineTextStyle: SkTextStyle = {
           fontFamilies: ["oldmadina"],
@@ -220,88 +248,95 @@ const Line = (props: LineProps) => {
       ayaSpaceWidth = defaultSpaceWidth * ratio
 
     }
-
-
-
-    var wordList = [];
-
-    const x_start = pageWidth - defaultMargin
-
-    var currentxPos = x_start
-
-    const paragraphStyle = {
-      textHeightBehavior: TextHeightBehavior.DisableAll,
-      textAlign: TextAlign.Left,
-      //textDirection: TextDirection.RTL
-    };
-    const textStyle = {
-      color: Skia.Color("black"),
-      fontFamilies: ["oldmadina"],
-      fontSize: fontSize
-    };
-
-    for (let wordIndex = 0; wordIndex < layOutResult.length; wordIndex++) {
-      const layOut = layOutResult[wordIndex];
-      const wordInfo = lineTextInfo.wordInfos[wordIndex]
-
-      let paragraphBuilder = Skia.ParagraphBuilder.Make(paragraphStyle, fontMgr).pushStyle(textStyle);
-
-      for (let i = wordInfo.startIndex; i <= wordInfo.endIndex; i++) {
-        const char = lineText.charAt(i)
-        const tajweed = tajweedInfo.get(i)
-        const justInfo = justResults?.fontFeatures?.get(i)
-        if (tajweed || justInfo) {
-
-          const newtextStyle: SkTextStyle = {
-            color: textStyle.color,
-            fontFamilies: textStyle.fontFamilies,
-            fontSize: textStyle.fontSize,
-          };
-
-          if (tajweed) {
-            newtextStyle.color = Skia.Color(Float32Array.from(getColor(tajweed).map(a => a / 255)))
-          }
-
-          if (justInfo) {
-            newtextStyle.fontFeatures = justInfo
-          }
-
-          paragraphBuilder.pushStyle(newtextStyle)
-          paragraphBuilder.addText(char)
-          paragraphBuilder.pop()
-        } else {
-          paragraphBuilder.addText(char)
-        }
-      }
       
-      let paragraph = paragraphBuilder.pop().build();
+    return lineParagraph(pageWidth, defaultMargin, fontSize, layOutResult, lineTextInfo, fontMgr, lineText, tajweedInfo, justResults,
+      maxWidth, ayaSpaceWidth, simpleSpaceWidth, interLine, props.yPos, scale, margin, defaultSpaceWidth)
 
-      paragraph.layout(maxWidth)
-
-      currentxPos -= paragraph.getLongestLine()
-
-      wordList.push(
-        <Paragraph key={wordIndex} paragraph={paragraph} x={currentxPos} y={0} width={maxWidth} />
-      );
-
-
-      if (lineTextInfo.spaces.get(wordInfo.endIndex + 1) === SpaceType.Aya) {
-        currentxPos -= ayaSpaceWidth
-      } else {
-        currentxPos -= simpleSpaceWidth
-      }
-
-    }
-
-    return (
-      <View style={{ width: pageWidth, height: interLine, marginTop: marginTop }}>
-        <Canvas style={{ width: pageWidth, height: interLine, top: -250 * scale, position: 'relative', left:  defaultMargin - margin }}>
-          {wordList}
-        </Canvas>
-      </View>
-    );
   }
 };
+
+function lineParagraph(pageWidth: number, defaultMargin: number, fontSize: number, layOutResult: any[], lineTextInfo: any, fontMgr: any,
+  lineText: string, tajweedInfo: any, justResults: any, maxWidth: number, ayaSpaceWidth: number, simpleSpaceWidth: number,
+  interLine: number, yPos: number, scale: number, margin: number, defaultSpaceWidth:number) {
+
+  
+  const textStyle: SkTextStyle = {
+    color: Skia.Color("black"),
+    fontFamilies: ["oldmadina"],
+    fontSize: fontSize,
+  };
+
+  let paragraphBuilder = Skia.ParagraphBuilder.Make(lineParStyle, fontMgr);
+  
+  paragraphBuilder.pushStyle(textStyle);
+  for (let wordIndex = 0; wordIndex < layOutResult.length; wordIndex++) {
+    const layOut = layOutResult[wordIndex];
+    const wordInfo = lineTextInfo.wordInfos[wordIndex]
+
+    
+    /*
+    if (lineTextInfo.spaces.get(wordInfo.endIndex + 1) === SpaceType.Aya) {
+      textStyle.wordSpacing = ayaSpaceWidth - defaultSpaceWidth
+    } else {
+      textStyle.wordSpacing = simpleSpaceWidth - defaultSpaceWidth
+    }
+
+    paragraphBuilder.pushStyle(textStyle)*/
+
+    for (let i = wordInfo.startIndex; i <= wordInfo.endIndex; i++) {
+      const char = lineText.charAt(i)
+      const tajweed = tajweedInfo.get(i)
+      const justInfo = justResults?.fontFeatures?.get(i)
+      if (tajweed || justInfo) {
+
+        const newtextStyle: SkTextStyle = {
+          ...textStyle
+        };
+
+        if (tajweed) {
+          newtextStyle.color = Skia.Color(Float32Array.from(getColor(tajweed).map(a => a / 255)))
+        }
+
+        if (justInfo) {
+          newtextStyle.fontFeatures = justInfo
+        }
+
+        paragraphBuilder.pushStyle(newtextStyle)
+        paragraphBuilder.addText(char)
+        paragraphBuilder.pop()
+      } else {
+        paragraphBuilder.addText(char)
+      }
+    }
+
+    const newtextStyle: SkTextStyle = {
+      ...textStyle
+    };
+
+    if (lineTextInfo.spaces.get(wordInfo.endIndex + 1) === SpaceType.Aya) {
+      newtextStyle.letterSpacing = ayaSpaceWidth - defaultSpaceWidth  
+    } else if (lineTextInfo.spaces.get(wordInfo.endIndex + 1) === SpaceType.Simple) {
+      newtextStyle.letterSpacing = simpleSpaceWidth - defaultSpaceWidth
+    }
+      
+    paragraphBuilder.pushStyle(newtextStyle)
+    paragraphBuilder.addText(" ")
+    paragraphBuilder.pop()
+  }
+  
+  paragraphBuilder.pop();
+  let paragraph = paragraphBuilder.build();
+  paragraph.layout(maxWidth)
+  const currLineWidth = paragraph.getLongestLine()
+
+  //const xStart = pageWidth - margin - currLineWidth
+  const xStart = - (maxWidth - currLineWidth) + margin
+ 
+  return (
+    <Paragraph paragraph={paragraph} x={xStart} y={yPos} width={maxWidth} />
+  );
+ 
+}
 
 const styles = StyleSheet.create({
   line: {

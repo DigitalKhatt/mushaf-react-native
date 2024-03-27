@@ -8,6 +8,11 @@ config.resolver.assetExts.push(
   'otf'
 );
 
+config.resolver.assetExts.push(
+  'protobuf'
+);
+
+
 config.resolver.blockList = [/\.vs\/.*/]
 
 module.exports = config;

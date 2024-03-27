@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, View, StyleSheet, ScrollView } from 'react-native';
 import { Paragraph, Skia, useFonts, TextAlign, Canvas, Circle, Group, useFont, Text, TextBlob, Rect, TextHeightBehavior } from "@shopify/react-native-skia";
-import { quranTextService, PAGE_WIDTH, FONTSIZE, MARGIN, INTERLINE, TOP } from './qurantext.service'
+import { quranTextService, PAGE_WIDTH, FONTSIZE, MARGIN, INTERLINE } from './qurantext.service'
 import Line from './line';
 
 
@@ -20,7 +20,7 @@ const Page = (props: PageProps) => {
     return null;
   }
 
-  const pageIndex = props.index;  
+  const pageIndex = props.index;
 
   const pageWidth = props.pageWidth
 
@@ -32,27 +32,32 @@ const Page = (props: PageProps) => {
 
   const pageHeight = 15 * interLine + (300 * scale);
 
-  let paddintTop = TOP * scale
-
   var lineList = [];
 
+  let yPos = -200 * scale;
+
+
   for (let lineIndex = 0; lineIndex < quranTextService.quranText[pageIndex].length; lineIndex++) {
-    lineList.push(     
-        <Line key={lineIndex}  pageWidth={pageWidth} pageIndex={pageIndex} lineIndex={lineIndex} />      
+    if ((pageIndex === 0 || pageIndex == 1) && lineIndex == 1) {
+      yPos = 3 * interLine;
+    }
+    lineList.push(
+      <Line key={lineIndex} pageWidth={pageWidth} pageIndex={pageIndex} lineIndex={lineIndex} yPos={yPos} />
     );
+    yPos += interLine;
   }
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
-      <View style={{ width: pageWidth, height: pageHeight, paddingTop: paddintTop}}>
+      <Canvas style={{ width: pageWidth, height: pageHeight }}>
         {lineList}
-      </View>
+      </Canvas>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  page: {   
+  page: {
     backgroundColor: "rgb(255, 255, 255)",
   },
 });
