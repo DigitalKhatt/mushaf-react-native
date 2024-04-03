@@ -8,12 +8,14 @@ interface WordInfo {
   startIndex: number
   endIndex: number
   text: string
+  baseText: string,
 }
 export interface LineTextInfo {
   ayaSpaceIndexes: number[];
   simpleSpaceIndexes: number[];
   spaces: Map<number, SpaceType>
-  wordInfos: WordInfo[]
+  wordInfos: WordInfo[],
+
 }
 class QuranTextService {
 
@@ -23,21 +25,31 @@ class QuranTextService {
   private _sajsdas: any[] = [];
   private TafkhimRE!: RegExp;
   private OthersRE!: RegExp;
+  private bases = new Set<number>();
 
-  private madinaLineWidths = new Map([    
-    [600 * 15 + 9, 0.84],   
-    [602 * 15 + 5, 0.61],   
+  public rightNoJoinLetters = "ادذرزوؤأٱإءة";
+  public dualJoinLetters = "بتثجحخسشصضطظعغفقكلمنهيئى"
+
+  private madinaLineWidths = new Map([
+    [600 * 15 + 9, 0.84],
+    [602 * 15 + 5, 0.61],
     [602 * 15 + 15, 0.59],
-    [603 * 15 + 10, 0.68],   
-    [604 * 15 + 9, 0.836],   
+    [603 * 15 + 10, 0.68],
+    [604 * 15 + 4, 0.836],
+    [604 * 15 + 9, 0.836],
     [604 * 15 + 14, 0.717],
     [604 * 15 + 15, 0.54],
   ]);
 
+
   private tajweedResuls: Map<number, Map<number, string>[]> = new Map()
+
+  private LineTextInfoCache: Map<number, LineTextInfo> = new Map()
   constructor() {
 
     this._quranText = quranTextOldMadinah;
+
+    this.initBases()
 
     const start = performance.now();
 
@@ -131,6 +143,37 @@ class QuranTextService {
 
     this.initTajweed()
 
+  }
+
+  private initBases() {
+    for (let i = 0; i < this.dualJoinLetters.length; i++) {
+      this.bases.add(this.dualJoinLetters.charCodeAt(i))
+    }
+    for (let i = 0; i < this.rightNoJoinLetters.length; i++) {
+      this.bases.add(this.rightNoJoinLetters.charCodeAt(i))
+    }
+  }
+
+  isLastBase(text: string, index: number) {
+
+    for (let charIndex = index + 1; charIndex < text.length; charIndex++) {
+      if (this.bases.has(text.charCodeAt(charIndex))) {
+        return false
+      }
+    }
+    return true
+  }
+
+  nbBases(text: string) {
+
+    let nb = 0;
+
+    for (let charIndex = 0; charIndex < text.length; charIndex++) {
+      if (this.bases.has(text.charCodeAt(charIndex))) {
+        nb++
+      }
+    }
+    return nb
   }
 
   initTajweed() {
@@ -378,22 +421,25 @@ class QuranTextService {
 
   analyzeText(pageIndex: number, plineIndex: number): LineTextInfo {
 
+    const key = pageIndex * 15 + plineIndex
+    let lineTextInfo = this.LineTextInfoCache.get(key)
 
+    if (lineTextInfo) return lineTextInfo
 
-    let lineTextInfo: LineTextInfo = {
+    lineTextInfo = {
       ayaSpaceIndexes: [],
       simpleSpaceIndexes: [],
       wordInfos: [],
-      spaces : new Map()
+      spaces: new Map()
     }
 
-
+    this.LineTextInfoCache.set(key, lineTextInfo)
 
     const pageText = this.quranText[pageIndex];
 
 
     const lineText = this.quranText[pageIndex][plineIndex]
-    let currentWord : WordInfo = { text: "", startIndex : 0, endIndex : -1 };
+    let currentWord: WordInfo = { text: "", startIndex: 0, endIndex: -1, baseText: "" };
     lineTextInfo.wordInfos.push(currentWord);
     for (let i = 0; i < lineText.length; i++) {
       const char = lineText.charAt(i);
@@ -401,20 +447,23 @@ class QuranTextService {
 
         if ((lineText.charCodeAt(i - 1) >= 0x0660 && lineText.charCodeAt(i - 1) <= 0x0669) || (lineText.charCodeAt(i + 1) === 0x06DD)) {
           lineTextInfo.ayaSpaceIndexes.push(i)
-          lineTextInfo.spaces.set(i,SpaceType.Aya)
+          lineTextInfo.spaces.set(i, SpaceType.Aya)
         } else {
           lineTextInfo.simpleSpaceIndexes.push(i)
           lineTextInfo.spaces.set(i, SpaceType.Simple)
-        }
-        currentWord = { text: "", startIndex: i + 1, endIndex: i }
+        }        
+        currentWord = { text: "", startIndex: i + 1, endIndex: i, baseText: "" }
         lineTextInfo.wordInfos.push(currentWord);
 
       } else {
         currentWord.text += char;
+        if (this.bases.has(char.charCodeAt(0))) {
+          currentWord.baseText += char;
+        }
         currentWord.endIndex++;
       }
     }
-
+    
 
     return lineTextInfo;
   }

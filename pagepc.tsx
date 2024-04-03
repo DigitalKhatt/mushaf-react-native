@@ -8,6 +8,7 @@ import { PreCalulatedLayout, usePreCalulatedLayout } from './precalculated.servi
 
 type PageProps = {
   pageWidth: number;
+  fontSize: number;
   index: number;
 };
 

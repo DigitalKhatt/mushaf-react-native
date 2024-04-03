@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Button, View, StyleSheet, ScrollView } from 'react-native';
-import { Paragraph, Skia, useFonts, TextAlign, Canvas, Circle, Group, useFont, Text, TextBlob, Rect, TextHeightBehavior } from "@shopify/react-native-skia";
+import { Skia, useFonts, TextAlign, Canvas, Circle, Group, useFont, Text, TextBlob, Rect, TextHeightBehavior } from "@shopify/react-native-skia";
 import { quranTextService, PAGE_WIDTH, FONTSIZE, MARGIN, INTERLINE } from './qurantext.service'
 import Line from './line';
 
 
 type PageProps = {
   pageWidth: number;
+  fontSize: number,
   index: number;
 };
 
@@ -24,6 +25,8 @@ const Page = (props: PageProps) => {
 
   const pageWidth = props.pageWidth
 
+  const fontSize = props.fontSize
+
   const scale = pageWidth / PAGE_WIDTH;
 
   const margin = MARGIN * scale;
@@ -34,7 +37,9 @@ const Page = (props: PageProps) => {
 
   var lineList = [];
 
-  let yPos = -200 * scale;
+  const ascendant = 400 * (fontSize / FONTSIZE)
+
+  let yPos = -ascendant + 200 * scale;
 
 
   for (let lineIndex = 0; lineIndex < quranTextService.quranText[pageIndex].length; lineIndex++) {
@@ -42,7 +47,7 @@ const Page = (props: PageProps) => {
       yPos = 3 * interLine;
     }
     lineList.push(
-      <Line key={lineIndex} pageWidth={pageWidth} pageIndex={pageIndex} lineIndex={lineIndex} yPos={yPos} />
+      <Line key={lineIndex} pageWidth={pageWidth} pageIndex={pageIndex} lineIndex={lineIndex} yPos={yPos} fontSize={fontSize} />
     );
     yPos += interLine;
   }

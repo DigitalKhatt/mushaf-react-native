@@ -14,6 +14,7 @@ const pageType = [
 type PageProps = {
   type: number,
   pageWidth: number;
+  fontSize: number;
   index: number;
 };
 
@@ -24,6 +25,7 @@ const PageFactory = (props: PageProps) => {
   return (
     <FactoryOutput
       pageWidth={props.pageWidth}
+      fontSize={props.fontSize}
       index={props.index}
     />
   );
