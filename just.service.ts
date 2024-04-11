@@ -17,7 +17,7 @@ export interface JustInfo {
 }
 
 export interface JustResultByLine {
-  fontFeatures: Map<number, SkTextFontFeatures[]>;
+  fontFeatures: Map<number, SkTextFontFeatures[]>; /* FontFeatures by character index in the line */ 
   simpleSpacing: number;
   ayaSpacing: number;
   fontSizeRatio: number;
@@ -302,12 +302,12 @@ export class JustService {
     }
 
 
-    const finalAssensantRegExprs = [
+    const finalAssendantRegExprs = [
       new RegExp(`${behafterbeh}|^.*(?<k3>[${right}])\\p{Mn}*(?<k4>["آادذٱأإ"]).*$`, "gdu"),
       new RegExp(`${behafterbeh}|^.*(?<k3>[${right}])\\p{Mn}*(?<k4>[كله])\\p{Mn}[${rightNoJoinLetters}].*$`, "gdu"),
     ]
     const finalAssensantLookup: Lookup = {
-      regExprs: finalAssensantRegExprs,
+      regExprs: finalAssendantRegExprs,
       matchingCondition: (context) => this.matchingCondition(context),
       actions: {
         k3: [{
@@ -332,9 +332,9 @@ export class JustService {
 
     const generalKashidaLookup: Lookup = {
       regExprs: [
-        ...finalAssensantRegExprs,
-        new RegExp(`${behafterbeh}|^.*(?<k3>[${right}])\\p{Mn}*(?<k4>[${mediLeftAsendant}]).*$`, "gdu"),
-        new RegExp(`${behafterbeh}|^.*(?<k3>[${right}])\\p{Mn}*(?<k5>[ل])\\p{Mn}*[ك].*$`, "gdu"),
+        ...finalAssendantRegExprs,
+        new RegExp(`${behafterbeh}|^.*(?<k3>[${right}])\\p{Mn}*(?<k5>[${mediLeftAsendant}]).*$`, "gdu"),
+        //new RegExp(`${behafterbeh}|^.*(?<k3>[${right}])\\p{Mn}*(?<k5>[ل])\\p{Mn}*[ك].*$`, "gdu"),
         new RegExp(`${behafterbeh}|^.*(?<k3>[${right}])\\p{Mn}*(?<k5>[${left}]).*$`, "gdu")
       ],
       matchingCondition: (context) => this.matchingCondition(context),
@@ -720,13 +720,13 @@ export class JustService {
 
   static saveLayoutToStorage(fontSizeLineWidthRatio: number, result: JustResultByLine[][]) {
     localStorage.setItem("layout" + fontSizeLineWidthRatio, compress(JSON.stringify(result, replacer)))
-    cachedLayout.set(fontSizeLineWidthRatio, result)
+    cachedLayouts.set(fontSizeLineWidthRatio, result)
 
   }
 
   static getLayoutFromStorage(fontSizeLineWidthRatio: number): JustResultByLine[][] | undefined {
 
-    let layout = cachedLayout.get(fontSizeLineWidthRatio)
+    let layout = cachedLayouts.get(fontSizeLineWidthRatio)
     if (layout) {
       return layout
     } else {
@@ -734,7 +734,7 @@ export class JustService {
       if (json) {
         layout = JSON.parse(decompress(json), reviver)
         if (layout) {
-          cachedLayout.set(fontSizeLineWidthRatio, layout)
+          cachedLayouts.set(fontSizeLineWidthRatio, layout)
         }
         
       }
@@ -773,4 +773,4 @@ function reviver(key: any, value: any) {
   return value;
 }
 
-let cachedLayout:  Map<number,JustResultByLine[][]> = new Map()
+let cachedLayouts:  Map<number,JustResultByLine[][]> = new Map()

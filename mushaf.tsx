@@ -5,13 +5,13 @@ import Page from "./page";
 import PagePC from "./pagepc";
 import PageFactory from "./pagefactory";
 import { JustService } from "./just.service";
-import { MARGIN, PAGE_WIDTH } from "./qurantext.service";
+import { MARGIN, PAGE_WIDTH, FONTSIZE } from "./qurantext.service";
 
 
+const defaultPageWidth = 600
+const scale = defaultPageWidth / PAGE_WIDTH
+const defaultFontSize = FONTSIZE * scale * 0.9
 
-const defaultFontSize = 30
-const scale = defaultFontSize / 1000
-let defaultPageWidth = scale * 17000
 const margin = scale * 400
 const lineWidth = defaultPageWidth - 2 * margin
 
